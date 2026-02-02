@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager - CRUD App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Task Manager</h1>
+            <p class="subtitle">Create, read, update & delete your tasks</p>
+        </header>
+
+        <div id="notificationBanner" class="notification-banner hidden">
+            <span>Enable notifications to get reminders on your phone or device</span>
+            <button type="button" class="enable-btn" id="enableNotificationsBtn">Enable</button>
+        </div>
+
+        <form id="taskForm" class="task-form">
+            <input 
+                type="text" 
+                id="taskInput" 
+                placeholder="Enter a new task..." 
+                autocomplete="off"
+                required
+            >
+            <input 
+                type="datetime-local" 
+                id="taskDueTime" 
+                title="Set reminder time"
+            >
+            <button type="submit" id="submitBtn">Add Task</button>
+        </form>
+
+        <div id="editForm" class="edit-form hidden">
+            <input 
+                type="text" 
+                id="editInput" 
+                placeholder="Edit task..."
+                autocomplete="off"
+            >
+            <input type="datetime-local" id="editDueTime" title="Set reminder time">
+            <button type="button" id="saveEditBtn">Save</button>
+            <button type="button" id="cancelEditBtn">Cancel</button>
+        </div>
+
+        <ul id="taskList" class="task-list"></ul>
+
+        <div id="emptyState" class="empty-state">
+            <p>No tasks yet. Add one above!</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
