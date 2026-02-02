@@ -2,7 +2,6 @@
 // Uses localStorage for persistence
 
 const STORAGE_KEY = 'taskManager_tasks';
-const PHONE_KEY = 'taskManager_phone';
 
 // DOM Elements
 const taskForm = document.getElementById('taskForm');
@@ -18,8 +17,9 @@ const saveEditBtn = document.getElementById('saveEditBtn');
 const cancelEditBtn = document.getElementById('cancelEditBtn');
 const notificationBanner = document.getElementById('notificationBanner');
 const enableNotificationsBtn = document.getElementById('enableNotificationsBtn');
-const phoneInput = document.getElementById('phoneInput');
-const savePhoneBtn = document.getElementById('savePhoneBtn');
+const dueTaskPopup = document.getElementById('dueTaskPopup');
+const duePopupTaskText = document.getElementById('duePopupTaskText');
+const duePopupOkBtn = document.getElementById('duePopupOkBtn');
 
 let tasks = [];
 let editingTaskId = null;
@@ -50,15 +50,10 @@ function isPastInputDateTime(value) {
     return selected < now;
 }
 
-// Initialize - Load tasks and phone from localStorage
+// Initialize - Load tasks from localStorage
 function init() {
     const stored = localStorage.getItem(STORAGE_KEY);
     tasks = stored ? JSON.parse(stored) : [];
-
-    const storedPhone = localStorage.getItem(PHONE_KEY);
-    if (storedPhone && phoneInput) {
-        phoneInput.value = storedPhone;
-    }
 
     updateMinDateTimeInputs();
     renderTasks();
@@ -268,28 +263,69 @@ function showTaskNotification(task) {
     });
 }
 
+function playReminderSound() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.5);
+        setTimeout(() => {
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.frequency.value = 1100;
+            osc2.type = 'sine';
+            gain2.gain.setValueAtTime(0.3, ctx.currentTime);
+            gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+            osc2.start(ctx.currentTime + 0.6);
+            osc2.stop(ctx.currentTime + 1.1);
+        }, 200);
+    } catch (e) {
+        console.warn('Could not play reminder sound:', e);
+    }
+}
+
+function showDueTaskPopup(dueTasks) {
+    if (!dueTaskPopup || !duePopupTaskText) return;
+
+    const taskList = dueTasks.map(t => t.text).join('\n• ');
+    duePopupTaskText.textContent = dueTasks.length === 1 ? dueTasks[0].text : '• ' + taskList;
+    dueTaskPopup.classList.remove('hidden');
+    playReminderSound();
+
+    if ('Notification' in window && Notification.permission === 'granted') {
+        dueTasks.forEach(task => showTaskNotification(task));
+    }
+}
+
+function hideDueTaskPopup() {
+    if (dueTaskPopup) dueTaskPopup.classList.add('hidden');
+}
+
 function checkDueTasksAndNotify() {
     const now = new Date();
-    let changed = false;
-    const phone = localStorage.getItem(PHONE_KEY) || '';
+    const dueTasks = [];
 
     tasks.forEach(task => {
         if (task.dueAt && !task.notified && !task.completed) {
             const dueDate = new Date(task.dueAt);
             if (dueDate <= now) {
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    showTaskNotification(task);
-                }
-                if (phone) {
-                    sendSms(phone, `Task due: ${task.text}`);
-                }
+                dueTasks.push(task);
                 task.notified = true;
-                changed = true;
             }
         }
     });
 
-    if (changed) {
+    if (dueTasks.length > 0) {
+        showDueTaskPopup(dueTasks);
         saveTasks();
     }
 }
@@ -297,36 +333,6 @@ function checkDueTasksAndNotify() {
 function startNotificationChecker() {
     // Check every 5 seconds for due tasks
     setInterval(checkDueTasksAndNotify, 5000);
-}
-
-// ========== PHONE / SMS (SIMULATED) ==========
-
-function isValidPhone(phone) {
-    if (!phone) return false;
-    // Very simple validation: starts with +, 8–20 digits total
-    const cleaned = phone.replace(/\s+/g, '');
-    return /^\+?\d{8,20}$/.test(cleaned);
-}
-
-function savePhoneNumber() {
-    const value = phoneInput.value.trim();
-    if (!value) {
-        alert('Please enter a phone number.');
-        return;
-    }
-    if (!isValidPhone(value)) {
-        alert('Please enter a valid phone number (e.g. +1234567890).');
-        return;
-    }
-    localStorage.setItem(PHONE_KEY, value);
-    alert('Phone number saved. We will use it for SMS reminders.');
-}
-
-// This is a simulated SMS sender. In a real app you would
-// call your backend API here (for example, a Twilio endpoint).
-function sendSms(phone, message) {
-    console.log('Simulated SMS to', phone, ':', message);
-    // You can replace this with a real fetch() call to your server.
 }
 
 // Event Listeners
@@ -345,7 +351,15 @@ saveEditBtn.addEventListener('click', saveEdit);
 cancelEditBtn.addEventListener('click', cancelEdit);
 
 enableNotificationsBtn.addEventListener('click', requestNotificationPermission);
-savePhoneBtn.addEventListener('click', savePhoneNumber);
+
+if (duePopupOkBtn) {
+    duePopupOkBtn.addEventListener('click', hideDueTaskPopup);
+}
+if (dueTaskPopup) {
+    dueTaskPopup.addEventListener('click', (e) => {
+        if (e.target === dueTaskPopup) hideDueTaskPopup();
+    });
+}
 
 editInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') saveEdit();

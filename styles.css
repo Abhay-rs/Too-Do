@@ -37,41 +37,6 @@ header h1 {
     font-size: 0.9rem;
 }
 
-.phone-settings {
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-}
-
-.phone-settings label {
-    display: block;
-    margin-bottom: 0.35rem;
-    color: rgba(255, 255, 255, 0.85);
-}
-
-.phone-input-row {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.phone-input-row input[type="tel"] {
-    flex: 1;
-}
-
-.phone-input-row button {
-    padding: 0.6rem 1rem;
-    border: none;
-    border-radius: 8px;
-    background: #2d6a4f;
-    color: #fff;
-    font-weight: 600;
-    cursor: pointer;
-    font-size: 0.9rem;
-}
-
-.phone-input-row button:hover {
-    background: #40916c;
-}
-
 .task-form {
     display: flex;
     gap: 0.5rem;
@@ -282,4 +247,77 @@ header h1 {
 
 .empty-state.hidden {
     display: none;
+}
+
+/* Due task popup */
+.due-popup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+}
+
+.due-popup-overlay.hidden {
+    display: none;
+}
+
+.due-popup {
+    background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
+    border: 2px solid #52b788;
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    animation: popIn 0.3s ease;
+}
+
+.due-popup h2 {
+    color: #fff;
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.due-popup-task {
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 1rem;
+    margin-bottom: 1.25rem;
+    line-height: 1.4;
+    white-space: pre-line;
+    text-align: left;
+}
+
+.due-popup-btn {
+    padding: 0.6rem 1.5rem;
+    background: #52b788;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.due-popup-btn:hover {
+    background: #40916c;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes popIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }

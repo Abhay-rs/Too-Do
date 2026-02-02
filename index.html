@@ -13,19 +13,6 @@
             <p class="subtitle">Create, read, update & delete your tasks</p>
         </header>
 
-        <div class="phone-settings">
-            <label for="phoneInput">Phone number for SMS reminders:</label>
-            <div class="phone-input-row">
-                <input 
-                    type="tel" 
-                    id="phoneInput" 
-                    placeholder="+1234567890"
-                    autocomplete="tel"
-                >
-                <button type="button" id="savePhoneBtn">Save</button>
-            </div>
-        </div>
-
         <div id="notificationBanner" class="notification-banner">
             <span>Enable notifications to get reminders on your phone or device</span>
             <button type="button" class="enable-btn" id="enableNotificationsBtn">Enable</button>
@@ -63,6 +50,14 @@
 
         <div id="emptyState" class="empty-state">
             <p>No tasks yet. Add one above!</p>
+        </div>
+    </div>
+
+    <div id="dueTaskPopup" class="due-popup-overlay hidden">
+        <div class="due-popup">
+            <h2>Your task is due!</h2>
+            <p id="duePopupTaskText" class="due-popup-task"></p>
+            <button type="button" id="duePopupOkBtn" class="due-popup-btn">OK</button>
         </div>
     </div>
 
