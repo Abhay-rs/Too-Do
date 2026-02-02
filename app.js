@@ -21,10 +21,37 @@ const enableNotificationsBtn = document.getElementById('enableNotificationsBtn')
 let tasks = [];
 let editingTaskId = null;
 
+// Helpers for date/time inputs
+function getMinLocalDateTimeString() {
+    const now = new Date();
+    now.setSeconds(0, 0);
+    const pad = (n) => String(n).padStart(2, '0');
+    const year = now.getFullYear();
+    const month = pad(now.getMonth() + 1);
+    const day = pad(now.getDate());
+    const hours = pad(now.getHours());
+    const minutes = pad(now.getMinutes());
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function updateMinDateTimeInputs() {
+    const minValue = getMinLocalDateTimeString();
+    if (taskDueTime) taskDueTime.min = minValue;
+    if (editDueTime) editDueTime.min = minValue;
+}
+
+function isPastInputDateTime(value) {
+    if (!value) return false;
+    const selected = new Date(value);
+    const now = new Date();
+    return selected < now;
+}
+
 // Initialize - Load tasks from localStorage
 function init() {
     const stored = localStorage.getItem(STORAGE_KEY);
     tasks = stored ? JSON.parse(stored) : [];
+    updateMinDateTimeInputs();
     renderTasks();
     checkNotificationPermission();
     startNotificationChecker();
@@ -131,6 +158,7 @@ function editTask(id) {
     editForm.classList.remove('hidden');
     taskInput.disabled = true;
     taskDueTime.disabled = true;
+    updateMinDateTimeInputs();
     editInput.focus();
     renderTasks();
 }
@@ -141,6 +169,12 @@ function saveEdit() {
     const text = editInput.value.trim();
     if (!text) {
         cancelEdit();
+        return;
+    }
+
+    updateMinDateTimeInputs();
+    if (editDueTime.value && isPastInputDateTime(editDueTime.value)) {
+        alert('Please choose a date and time from now or in the future.');
         return;
     }
 
@@ -186,17 +220,21 @@ function escapeHtml(text) {
 // ========== NOTIFICATIONS ==========
 
 function checkNotificationPermission() {
-    if (!('Notification' in window)) return;
+    if (!('Notification' in window)) {
+        // Notifications not supported, keep banner visible to hint limitation
+        return;
+    }
+
     if (Notification.permission === 'granted') {
         notificationBanner.classList.add('hidden');
-    } else if (Notification.permission !== 'denied') {
+    } else {
         notificationBanner.classList.remove('hidden');
     }
 }
 
 async function requestNotificationPermission() {
     if (!('Notification' in window)) {
-        alert('Your browser does not support notifications.');
+        alert('Your browser does not support notifications. Try opening this page from a normal browser tab (http/https) instead of file://');
         return;
     }
     const permission = await Notification.requestPermission();
@@ -207,6 +245,7 @@ async function requestNotificationPermission() {
             body: 'Notifications enabled! You\'ll get reminders for your tasks.',
             icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%232d6a4f"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>'
         });
+        checkDueTasksAndNotify();
     }
 }
 
@@ -220,29 +259,41 @@ function showTaskNotification(task) {
     });
 }
 
-function startNotificationChecker() {
-    // Check every 30 seconds for due tasks
-    setInterval(() => {
-        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+function checkDueTasksAndNotify() {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
-        const now = new Date();
-        tasks.forEach(task => {
-            if (task.dueAt && !task.notified && !task.completed) {
-                const dueDate = new Date(task.dueAt);
-                // Notify when due (within 1 minute window)
-                if (dueDate <= now || (dueDate - now) < 60000) {
-                    showTaskNotification(task);
-                    task.notified = true;
-                    saveTasks();
-                }
+    const now = new Date();
+    let changed = false;
+
+    tasks.forEach(task => {
+        if (task.dueAt && !task.notified && !task.completed) {
+            const dueDate = new Date(task.dueAt);
+            if (dueDate <= now) {
+                showTaskNotification(task);
+                task.notified = true;
+                changed = true;
             }
-        });
-    }, 30000);
+        }
+    });
+
+    if (changed) {
+        saveTasks();
+    }
+}
+
+function startNotificationChecker() {
+    // Check every 5 seconds for due tasks
+    setInterval(checkDueTasksAndNotify, 5000);
 }
 
 // Event Listeners
 taskForm.addEventListener('submit', (e) => {
     e.preventDefault();
+    updateMinDateTimeInputs();
+    if (taskDueTime.value && isPastInputDateTime(taskDueTime.value)) {
+        alert('Please choose a date and time from now or in the future.');
+        return;
+    }
     const dueTime = taskDueTime.value ? new Date(taskDueTime.value).toISOString() : null;
     addTask(taskInput.value, dueTime);
 });
